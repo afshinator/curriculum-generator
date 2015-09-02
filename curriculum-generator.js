@@ -3,7 +3,7 @@
 var dataSource = require( './src/dataSource.js' ),
 	dataModel = require( './src/dataModel.js' ),
 
-	verbose = 1 ;			// Debug output level, 0 == off, 
+	verbose = 0 ;			// Debug output level, 0 == off, 
 
 
 module.exports = function () {
@@ -54,22 +54,35 @@ module.exports = function () {
 
 	// TODO: bad function name, change this
 	processAllStudents = function() {
-		var i;
+		var i,
+			studentCount = dataModel.studentTestScoresCount();
 
-		console.log( 'Total Students: ' + dataModel.studentCount() );
+		console.log( 'Total Students: ' + studentCount );
 
-		for ( i=0 ; i < dataModel.studentCount(); i++ ) {
+		for ( i=0 ; i < studentCount; i++ ) {
 			processStudent( i );
 		}
 	},
 
 
 	processStudent = function( which ) {
-		var record = dataModel.getStudentRecord( which );
+		var record = dataModel.getStudentRecord( which ),
+			obj = dataModel.getLowestGradeAndDomainOfStudent( which ),
+			tempDomain;
 
-			console.log( record );
-			console.log ( dataModel.getLowestGradeAndDomain( which ) );
+		var rankOfDomainInGrade = dataModel.getRankOfDomainInGrade( obj.domain, obj.grade );
 
+		while ( rankOfDomainInGrade <= dataModel.countOfDomainsInGrade( obj.grade ) ) {
+			tempDomain = dataModel.getNthDomainFromGrade( rankOfDomainInGrade, obj.grade );
+			if ( dataModel.getTestGradeOfStudentForDomain( which, tempDomain ) === obj.grade ) {
+				dataModel.addToCurriculum( which, tempDomain, obj.grade );
+				// todo: update processed data
+			}
+			rankOfDomainInGrade++;
+		}
+
+
+		console.log( record, obj, dataModel.countOfDomainsInGrade( obj.grade ), rankOfDomainInGrade );
 	},
 
 
