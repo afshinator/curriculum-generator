@@ -59,31 +59,56 @@ module.exports = function () {
 
 		console.log( 'Total Students: ' + studentCount );
 
-		for ( i=0 ; i < studentCount; i++ ) {
+		// for ( i=0 ; i < studentCount; i++ ) {
+		for ( i=0 ; i < 5; i++ ) {
 			processStudent( i );
 		}
 	},
 
 
-	processStudent = function( which ) {
-		var record = dataModel.getStudentRecord( which ),
-			obj = dataModel.getLowestGradeAndDomainOfStudent( which ),
-			tempDomain;
 
-		var rankOfDomainInGrade = dataModel.getRankOfDomainInGrade( obj.domain, obj.grade );
+	processStudent = function( whichStudent ) {
+		var coursesCount = dataModel.numberOfCoursesInStudentsCurric( whichStudent ),
+			obj = {},
+			tempDomain,
+			rankOfDomainInGrade;
 
-		while ( rankOfDomainInGrade <= dataModel.countOfDomainsInGrade( obj.grade ) ) {
-			tempDomain = dataModel.getNthDomainFromGrade( rankOfDomainInGrade, obj.grade );
-			if ( dataModel.getTestGradeOfStudentForDomain( which, tempDomain ) === obj.grade ) {
-				dataModel.addToCurriculum( which, tempDomain, obj.grade );
-				// todo: update processed data
+console.log('before while ' + whichStudent );
+console.log('coursesCount :' + coursesCount );
+		while ( coursesCount < 5 ) {
+			// 1. Find lowest grade student recieved & related domain in test results;
+			// 	  use 1st one if same grade across multiple domains
+			obj = dataModel.getLowestGradeAndDomainOfStudent( whichStudent ),
+console.log(' obj ');
+console.log( obj );
+			// 2. Get the rank of the domain associated with the lowest score for that grade from domain_order file
+			rankOfDomainInGrade = dataModel.getRankOfDomainInGrade( obj.domain, obj.grade );
+console.log( 'rankOfDomainInGrade : ' + rankOfDomainInGrade );
+			// For the domain associated with the students lowest score, and every domain in the order listed
+			// in the domain_order file after that, do the following:
+			while ( rankOfDomainInGrade <= dataModel.countOfDomainsInGrade( obj.grade ) && coursesCount < 5 ) {
+				// Get the domain we're currently on;  same as obj.domain only the first time through loop
+				tempDomain = dataModel.getNthDomainFromGrade( rankOfDomainInGrade, obj.grade );		// same as obj.domain only the first time through this loop
+
+				// 3. If the test score for the domain we're currently at is the same as that lowest score we started this round on, 
+				if ( dataModel.getTestGradeOfStudentForDomain( whichStudent, tempDomain ) === obj.grade ) {
+					dataModel.addToCurriculum( whichStudent, tempDomain, obj.grade );				// Add it to this students curriculum
+					dataModel.promoteGradeInProcessedGrades( whichStudent, tempDomain, obj.grade );		// Update internal data structure so we know we've done this grade.domain
+					
+					coursesCount++;
+				}
+
+				rankOfDomainInGrade++;
 			}
-			rankOfDomainInGrade++;
+
 		}
+		console.log( dataModel.getStudentRecord( whichStudent ) );				
+		console.log(' ---------------------------- ');		
 
-
-		console.log( record, obj, dataModel.countOfDomainsInGrade( obj.grade ), rankOfDomainInGrade );
 	},
+
+
+
 
 
 	// Will get invoked by getFiles() after both the domain_order and student_tests are read in.

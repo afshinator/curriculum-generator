@@ -5,7 +5,7 @@
 
 module.exports = function () {
 
-	var verbose = 2;					// 1 == show debug output, 2 == show all debug output
+	var verbose = 0;					// 1 == show debug output, 2 == show all debug output
 
 	var rawDomainOrder,					// Unprocessed data read in from domain_order file
 		rawStudentTests,				// Unprocessed data read in from student_tests files
@@ -97,7 +97,7 @@ module.exports = function () {
 		// Sanity check
 		if ( rawDomainOrder[0][0] !== 'K' ) { console.error( 'domain_order data problems' ); }
 
-console.log( ' grade we are looking at : ' + grade );
+// console.log( ' grade we are looking at : ' + grade );
 
 		grade = convertGradeToIndex( grade );
 
@@ -117,14 +117,14 @@ console.log( ' grade we are looking at : ' + grade );
 
 
 	/* each student record: {
-		name :'',
-		testResults : [],
-		processedTestScores : [],
+		name :'',	
+		testResults : [],					// the original test results from file
+		processedTestScores : [],			// copy of the test results that will be modified by creating curriculum
 		curriculum, []
 	   }
 	*/
 	getStudentRecord = function( index ) {
-		return records[ index ];
+		return records[ index ];			// returns the whole student record
 	},
 
 
@@ -168,13 +168,41 @@ console.log( ' grade we are looking at : ' + grade );
 		return result;
 	},
 
+	// Given which student, and what test score, bring up the grade by one
+	promoteGradeInProcessedGrades = function( studentIndex, domain, gradeShouldBe ) {
+		var gradeIs = records[ studentIndex ].processedTestScores[ getOrderOfDomainInStudentTests(domain) ],
+			newGrade = '';
+
+		// sanity check: gradeShouldBe === gradeIs
+		if( gradeShouldBe !== gradeIs) { 
+			console.log('Something is seriously wrong!' ); 
+		}
+
+		if ( gradeIs === 'K' ) { 
+			newGrade = '1';
+		}
+		else {
+			newGrade = gradeIs;
+			newGrade *= 1;			// turn it into an integer
+			newGrade++;				// add 1
+			newGrade = newGrade + '';	// turn it back into a string
+		}
+
+		records[ studentIndex ].processedTestScores[ getOrderOfDomainInStudentTests(domain) ] = newGrade;
+	},
+
+
+	numberOfCoursesInStudentsCurric = function( whichStudent ) {
+		return records[ whichStudent ].curriculum.length;
+	};
+
 
 	addToCurriculum = function( which, domain, grade ) {
 		var courseToAdd = grade + '.' + domain;
 
 		records[ which ].curriculum.push( courseToAdd );
 
-		console.log( 'Curric: ' + records[which] );
+		// console.log( 'Curric: ' , records[which] );
 	},
 
 
@@ -220,10 +248,12 @@ console.log( ' grade we are looking at : ' + grade );
 		studentTestScoresCount : studentTestScoresCount,
 		getStudentRecord : getStudentRecord,
 		getLowestGradeAndDomainOfStudent: getLowestGradeAndDomainOfStudent,
+		promoteGradeInProcessedGrades : promoteGradeInProcessedGrades,
 		countOfDomainsInGrade : countOfDomainsInGrade,		
 		getRankOfDomainInGrade : getRankOfDomainInGrade,
 		getNthDomainFromGrade : getNthDomainFromGrade,
 		getTestGradeOfStudentForDomain : getTestGradeOfStudentForDomain,
+		numberOfCoursesInStudentsCurric : numberOfCoursesInStudentsCurric,
 		addToCurriculum : addToCurriculum
 	};
 
